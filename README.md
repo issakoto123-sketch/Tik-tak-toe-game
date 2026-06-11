@@ -64,6 +64,7 @@ Diagonals:  [0,4,8]  [2,4,6]
 
 Works in all modern browsers: Chrome, Firefox, Safari, Edge.
 No build step. No installation. Just open and play.
+Get the game @ https://issakoto123-sketch.github.io/Tik-tak-toe-game/
 
 ---
 
