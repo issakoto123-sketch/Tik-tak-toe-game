@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0d0f;
+      --surface:  #16161a;
+      --border:   #2a2a35;
+      --x-color:  #e05c5c;
+      --o-color:  #5cb8e0;
+      --win-glow: #f0c060;
+      --text:     #e8e8f0;
+      --muted:    #666680;
+      --radius:   14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 24px;
+    }
+
+    /* Header */
+    header { text-align: center; }
+    header h1 {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: 0.08em;
+      color: var(--text);
+    }
+    header h1 span.x { color: var(--x-color); }
+    header h1 span.o { color: var(--o-color); }
+
+    /* Score bar */
+    .scores {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      text-align: center;
+      min-width: 90px;
+    }
+    .score-card .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .score-card .value {
+      font-family: 'Space Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .score-card.x-card .value { color: var(--x-color); }
+    .score-card.o-card .value { color: var(--o-color); }
+    .score-card.draw-card .value { color: var(--muted); }
+    .divider { color: var(--border); font-size: 1.4rem; }
+
+    /* Status */
+    .status {
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      height: 24px;
+      transition: color 0.3s;
+    }
+    .status.x-turn { color: var(--x-color); }
+    .status.o-turn { color: var(--o-color); }
+    .status.winner  { color: var(--win-glow); font-weight: 600; }
+    .status.draw    { color: var(--muted); }
+
+    /* Board */
+    .board-wrap {
+      position: relative;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .cell {
+      width:  clamp(88px, 22vw, 120px);
+      height: clamp(88px, 22vw, 120px);
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 700;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cell:hover:not(.taken) {
+      background: #1e1e25;
+      border-color: #44445a;
+      transform: scale(1.03);
+    }
+    .cell.taken { cursor: default; }
+    .cell.x { color: var(--x-color); }
+    .cell.o { color: var(--o-color); }
+
+    /* Win highlight */
+    .cell.winning {
+      border-color: var(--win-glow);
+      background: #1e1a0a;
+      box-shadow: 0 0 18px #f0c06040;
+      animation: pulse 0.6s ease-out;
+    }
+    @keyframes pulse {
+      0%   { transform: scale(1.0); }
+      50%  { transform: scale(1.07); }
+      100% { transform: scale(1.0); }
+    }
+
+    /* Symbol pop-in */
+    .cell .symbol {
+      display: inline-block;
+      animation: pop 0.18s cubic-bezier(.17,.67,.45,1.4);
+    }
+    @keyframes pop {
+      from { transform: scale(0.3); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    /* Buttons */
+    .actions { display: flex; gap: 10px; }
+    button {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 22px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    #resetBtn {
+      background: var(--surface);
+      color: var(--text);
+    }
+    #resetBtn:hover {
+      background: #222230;
+      border-color: #555570;
+    }
+    #newGameBtn {
+      background: transparent;
+      color: var(--muted);
+    }
+    #newGameBtn:hover {
+      color: var(--text);
+      border-color: #555570;
+    }
+
+    /* Turn indicator dots */
+    .turn-indicator {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s, transform 0.3s;
+    }
+    .dot.active-x { background: var(--x-color); transform: scale(1.4); }
+    .dot.active-o { background: var(--o-color); transform: scale(1.4); }
+
+    footer {
+      font-size: 0.7rem;
+      color: var(--border);
+      letter-spacing: 0.08em;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1><span class="x">X</span> · Tic Tac Toe · <span class="o">O</span></h1>
+  </header>
+
+  <div class="scores">
+    <div class="score-card x-card">
+      <div class="label">Player X</div>
+      <div class="value" id="scoreX">0</div>
+    </div>
+    <div class="divider">·</div>
+    <div class="score-card draw-card">
+      <div class="label">Draws</div>
+      <div class="value" id="scoreDraw">0</div>
+    </div>
+    <div class="divider">·</div>
+    <div class="score-card o-card">
+      <div class="label">Player O</div>
+      <div class="value" id="scoreO">0</div>
+    </div>
+  </div>
+
+  <div class="turn-indicator">
+    <div class="dot" id="dotX"></div>
+    <div class="dot" id="dotO"></div>
+  </div>
+
+  <p class="status" id="status">X's turn</p>
+
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <!-- 9 cells injected by JS -->
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="resetBtn">New Round</button>
+    <button id="newGameBtn">Reset Scores</button>
+  </div>
+
+  <footer>TWO PLAYER · LOCAL</footer>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],  // rows
+    [0,3,6],[1,4,7],[2,5,8],  // cols
+    [0,4,8],[2,4,6]           // diags
+  ];
+
+  let board    = Array(9).fill(null);
+  let current  = 'X';
+  let gameOver = false;
+  let scores   = { X: 0, O: 0, D: 0 };
+
+  // ── DOM refs ───────────────────────────────────────────
+  const boardEl   = document.getElementById('board');
+  const statusEl  = document.getElementById('status');
+  const scoreXEl  = document.getElementById('scoreX');
+  const scoreOEl  = document.getElementById('scoreO');
+  const scoreDE   = document.getElementById('scoreDraw');
+  const dotX      = document.getElementById('dotX');
+  const dotO      = document.getElementById('dotO');
+
+  // ── Build cells ────────────────────────────────────────
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.i = i;
+      cell.addEventListener('click', handleClick);
+      boardEl.appendChild(cell);
+    }
+  }
+
+  // ── Click handler ──────────────────────────────────────
+  function handleClick(e) {
+    const i = +e.currentTarget.dataset.i;
+    if (gameOver || board[i]) return;
+
+    board[i] = current;
+    renderCell(i);
+
+    const win = checkWin();
+    if (win) {
+      scores[current]++;
+      updateScores();
+      highlightWin(win);
+      setStatus(`${current} wins! 🎉`, 'winner');
+      gameOver = true;
+      return;
+    }
+    if (board.every(Boolean)) {
+      scores.D++;
+      updateScores();
+      setStatus("It's a draw!", 'draw');
+      gameOver = true;
+      return;
+    }
+
+    current = current === 'X' ? 'O' : 'X';
+    updateTurnUI();
+  }
+
+  // ── Render a single cell ───────────────────────────────
+  function renderCell(i) {
+    const cell = boardEl.children[i];
+    cell.classList.add('taken', current.toLowerCase());
+    cell.innerHTML = `<span class="symbol">${current}</span>`;
+  }
+
+  // ── Win check ──────────────────────────────────────────
+  function checkWin() {
+    for (const line of WIN_LINES) {
+      const [a, b, c] = line;
+      if (board[a] && board[a] === board[b] && board[a] === board[c]) return line;
+    }
+    return null;
+  }
+
+  function highlightWin(line) {
+    line.forEach(i => boardEl.children[i].classList.add('winning'));
+  }
+
+  // ── UI helpers ─────────────────────────────────────────
+  function setStatus(msg, cls = '') {
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + cls;
+  }
+
+  function updateTurnUI() {
+    dotX.className = 'dot' + (current === 'X' ? ' active-x' : '');
+    dotO.className = 'dot' + (current === 'O' ? ' active-o' : '');
+    setStatus(`${current}'s turn`, current === 'X' ? 'x-turn' : 'o-turn');
+  }
+
+  function updateScores() {
+    scoreXEl.textContent = scores.X;
+    scoreOEl.textContent = scores.O;
+    scoreDE.textContent  = scores.D;
+  }
+
+  // ── Reset round ────────────────────────────────────────
+  function resetRound() {
+    board    = Array(9).fill(null);
+    current  = 'X';
+    gameOver = false;
+    buildBoard();
+    updateTurnUI();
+  }
+
+  // ── Reset everything ───────────────────────────────────
+  function resetAll() {
+    scores = { X: 0, O: 0, D: 0 };
+    updateScores();
+    resetRound();
+  }
+
+  // ── Init ───────────────────────────────────────────────
+  document.getElementById('resetBtn').addEventListener('click', resetRound);
+  document.getElementById('newGameBtn').addEventListener('click', resetAll);
+
+  buildBoard();
+  updateTurnUI();
+</script>
+</body>
+</html>
